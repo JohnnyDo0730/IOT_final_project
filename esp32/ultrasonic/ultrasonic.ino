@@ -126,25 +126,10 @@ void loop() {
   // 1. 超音波距離檢測
   float distance = readUltrasonicDistance(last_distance);
   float distDiff = 0;
-  if (last_distance > 0 && distance < 800) {
-    distDiff = distance - last_distance;
-    // 計算最近3次是否有劇烈遠離
-    distanceBuffer[distIdx] = distDiff;
-    distIdx = (distIdx + 1) % DIST_BUFFER;
-  /*
-    int abnormalCnt = 0;
-    for (int i = 0; i < DIST_BUFFER; i++) {
-      if (distanceBuffer[i] > FALL_THRESHOLD) abnormalCnt++;
-    }*/
-    // 若連續3次有2次劇烈拉遠，就觸發警報
-    //if (abnormalCnt >= 1) {
-    if (distDiff >= FALL_THRESHOLD) {
-      Serial.println("⚠️ 嚴重跌倒警報！");
-      digitalWrite(BUZZER_PIN, HIGH);
-      // 可在此補充發通知等
-      delay(3000);
-    }
-  }
+  distDiff = distance - last_distance;
+  // 計算最近3次是否有劇烈遠離
+  distanceBuffer[distIdx] = distDiff;
+  distIdx = (distIdx + 1) % DIST_BUFFER;
   last_distance = distance;
 
   // 2. 每次都處理紅外線
@@ -202,6 +187,15 @@ void loop() {
     sendData(packPayload(isLightOn, distance));
   }
 
+  // 傳送資料後再等待
+  if (distDiff >= FALL_THRESHOLD) {
+    Serial.println("⚠️ 嚴重跌倒警報！");
+    digitalWrite(BUZZER_PIN, HIGH);
+    // 可在此補充發通知等
+    delay(6000);
+  }
+
+
   loopCnt = (loopCnt + 1) % 10000;
   delay(USONIC_DELAY); // 以超音波頻率作為主循環
 }
@@ -235,20 +229,20 @@ String packPayload(float temperature, float humidity, int waterLevel, int coRaw,
 // 發送資料到伺服器
 void sendData(String payload) {
   HTTPClient http;
-  Serial.println("Sending to Server: " + String(serverUrl));
+  //Serial.println("Sending to Server: " + String(serverUrl));
 
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
 
   int httpResponseCode = http.POST(payload);
   if (httpResponseCode > 0) {
-    Serial.printf("HTTP Response code: %d\n", httpResponseCode);
+    //Serial.printf("HTTP Response code: %d\n", httpResponseCode);
     String response = http.getString();
-    Serial.println(response);
+    //Serial.println(response);
   } else {
-    Serial.printf("HTTP Request failed: %s\n",
-                  http.errorToString(httpResponseCode).c_str());
+    /*Serial.printf("HTTP Request failed: %s\n",
+                  http.errorToString(httpResponseCode).c_str());*/
   }
   http.end();
-  Serial.println();
+  Serial.println("Send Success");
 }

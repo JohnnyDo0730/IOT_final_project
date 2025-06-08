@@ -341,16 +341,7 @@
                             data: dists,
                             borderColor: 'purple',
                             backgroundColor: 'rgba(128,0,128,0.08)',
-                            tension: 0.3,
-                            segment: {
-                                borderColor: ctx => {
-                                    const {p0, p1} = ctx;
-                                    if (p0 && p1 && (p1.parsed.y - p0.parsed.y) >= 130) {
-                                        return 'red';
-                                    }
-                                    return 'purple';
-                                }
-                            }
+                            tension: 0.3
                         }
                     ]
                 },
@@ -387,18 +378,10 @@
             dist_chart.options.scales.y.max = 250;
             dist_chart.options.scales.y.ticks.callback = function(value) { return yTicks.includes(value) ? String(value) : ''; };
             if (dist_chart.options.scales.y.ticks.values) delete dist_chart.options.scales.y.ticks.values;
-            // segment 設定：只有前後差+130(瞬間遠離)才紅色
-            dist_chart.data.datasets[0].segment = {
-                borderColor: ctx => {
-                    const {p0, p1} = ctx;
-                    if (p0 && p1 && (p1.parsed.y - p0.parsed.y) >= 130) {
-                        return 'red';
-                    }
-                    return 'purple';
-                }
-            };
             // 直接指定 grid.color 為靜態顏色，避免 scriptable 遞迴
             dist_chart.options.scales.y.grid.color = '#eee';
+            // 移除 segment 設定，回復最基本顯示
+            if (dist_chart.data.datasets[0].segment) delete dist_chart.data.datasets[0].segment;
             dist_chart.update();
         }
     }
@@ -458,23 +441,6 @@
     // 初始化
     fetchSensorData();
     setInterval(fetchSensorData, 2000);
-
-    // 風扇動畫
-    let fanAngle = 0;
-    let lastFanRate = 0;
-    function animateFan() {
-      // 取得速率
-      const fanRateText = document.getElementById('fanRate')?.textContent;
-      let rate = parseFloat(fanRateText);
-      if (isNaN(rate)) rate = 30; // 預設轉速
-      // 速率 0~100 對應角速度 0~10deg/frame
-      const speed = Math.max(0.1, Math.min(rate / 10, 10));
-      fanAngle = (fanAngle + speed) % 360;
-      const blades = document.getElementById('fan-blades');
-      if (blades) blades.setAttribute('transform', `rotate(${fanAngle} 40 40)`);
-      requestAnimationFrame(animateFan);
-    }
-    animateFan();
   </script>
 </body>
 </html>
