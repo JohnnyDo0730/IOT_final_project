@@ -1,4 +1,3 @@
-
 import sqlite3
 import click
 import os
@@ -40,5 +39,13 @@ def init_db_command():
 def init_app(app):
     """在應用中註冊資料庫函數"""
     app.teardown_appcontext(close_db)
-    app.cli.add_command(init_db_command) 
+    app.cli.add_command(init_db_command)
+    # 在應用程式啟動時，自動刪除舊的資料庫檔案並重新初始化
+    with app.app_context():
+        db_path = app.config['DATABASE']
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            print(f"舊資料庫檔案已刪除: {db_path}") # 增加提示訊息
+        init_db()
+        print("資料庫已初始化 (每次啟動時重置)") # 增加提示訊息
 
