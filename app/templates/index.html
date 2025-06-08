@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智慧浴室監控台</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #1976d2;
+      color: #fff;
+      padding: 12px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .main-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+    .section {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .container {
+      flex: 1;
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: auto;
+    }
+    .fan-container svg {
+      margin-top: 5px;
+    }
+    .danger-warning-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    .alarm-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .alarm-box {
+      width: 70px;
+      padding: 8px 0;
+      border-radius: 8px;
+      background: #ececec;
+      color: #1976d2;
+      text-align: center;
+      font-weight: bold;
+      transition: background 0.3s, color 0.3s;
+    }
+    #danger-center-alarm {
+      margin: 0 24px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #b0bec5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: background 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">智慧浴室監控台</div>
+  <div class="main-content">
+    <div class="section">
+      <div class="container" style="flex:3; align-items:stretch; height:250px; min-height:0;">
+        <canvas id="air_chart" style="width:100%;height:100%;"></canvas>
+      </div>
+      <div class="container fan-container" style="flex:1; max-width:240px; min-width:180px; justify-content:center; align-items:center;">
+        <svg width="140" height="140" viewBox="0 0 80 80">
+          <g>
+            <circle cx="40" cy="40" r="30" fill="#e3eafc" stroke="#1976d2" stroke-width="2"/>
+            <g id="fan-blades">
+              <ellipse cx="40" cy="20" rx="5" ry="19" fill="#90caf9" transform="rotate(0 40 40)"/>
+              <ellipse cx="40" cy="20" rx="5" ry="19" fill="#90caf9" transform="rotate(120 40 40)"/>
+              <ellipse cx="40" cy="20" rx="5" ry="19" fill="#90caf9" transform="rotate(240 40 40)"/>
+            </g>
+            <circle cx="40" cy="40" r="10" fill="#1976d2"/>
+          </g>
+        </svg>
+        <div style="margin-top:16px; font-size:1.2rem; color:#1976d2; text-align:center;">
+          風扇速率<br>
+          <span id="fanRate" style="font-size:2rem; font-weight:bold;">--</span> %
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="container" style="flex:1; align-items:stretch;">
+        <canvas id="light_chart" style="width:100%;height:180px;"></canvas>
+      </div>
+      <div class="container" style="flex:1; align-items:stretch;">
+        <canvas id="dist_chart" style="width:100%;height:180px;"></canvas>
+      </div>
+    </div>
+    <div class="section">
+      <div class="container" style="flex:1">
+        <div id="waterLevelAlarm" style="width:90px; height:90px; border-radius:50%; background:#e3f2fd; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:background 0.3s;">
+          <svg id="waterDropIcon" width="48" height="48" viewBox="0 0 48 48">
+            <path id="waterDropPath" d="M24 6C24 6 10 22 10 32a14 14 0 0 0 28 0C38 22 24 6 24 6z" fill="#1565c0"/>
+          </svg>
+          <div id="waterLevelText" style="margin-top:6px; font-size:1.1rem; color:#222; font-weight:bold;">水位正常</div>
+        </div>
+      </div>
+      <div class="container" style="flex:3">
+        <div class="danger-warning-wrapper" style="display:flex; align-items:center; justify-content:center; height:100%;">
+          <div class="alarm-col" style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
+            <div id="alarm-temperature" class="alarm-box" style="width:200px; padding:8px 0; border-radius:8px; background:#ececec; color:#1976d2; text-align:center; font-weight:bold; transition:background 0.3s, color 0.3s;">溫度超出警戒值</div>
+            <div id="alarm-humidity" class="alarm-box" style="width:200px; padding:8px 0; border-radius:8px; background:#ececec; color:#1976d2; text-align:center; font-weight:bold; transition:background 0.3s, color 0.3s;">濕度超出警戒值</div>
+          </div>
+          <div id="danger-center-alarm" style="margin:0 24px; width:90px; height:90px; border-radius:50%; background:#b0bec5; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:background 0.3s;">
+            <svg width="48" height="48" viewBox="0 0 48 48">
+              <circle cx="24" cy="24" r="22" fill="#fff3e0" stroke="#ff9800" stroke-width="3"/>
+              <text x="24" y="30" text-anchor="middle" font-size="22" fill="#ff9800" font-weight="bold">!</text>
+            </svg>
+            <div id="dangerAlarmText" style="margin-top:6px; font-size:1.1rem; color:#ff9800; font-weight:bold;">安全</div>
+          </div>
+          <div class="alarm-col" style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
+            <div id="alarm-co" class="alarm-box" style="width:200px; padding:8px 0; border-radius:8px; background:#ececec; color:#1976d2; text-align:center; font-weight:bold; transition:background 0.3s, color 0.3s;">CO超出警戒值</div>
+            <div id="alarm-distance" class="alarm-box" style="width:200px; padding:8px 0; border-radius:8px; background:#ececec; color:#1976d2; text-align:center; font-weight:bold; transition:background 0.3s, color 0.3s;">檢測到有人跌倒</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let air_chart;
+    let light_chart;
+    let dist_chart;
+
+    async function fetchSensorData() {
+      try {
+        const res = await fetch('/front/get_data');
+        const result = await res.json();
+        const data = result.data;
+        console.log('取得資料:', data);
+
+        // 更新風扇速率
+        const fanRateEl = document.getElementById('fanRate');
+        if (data.fan_rate !== undefined) {
+          fanRateEl.textContent = data.fan_rate.toFixed(1);
+        } else {
+          fanRateEl.textContent = '--';
+        }
+
+        // 更新水位提醒
+        updateWaterLevelAlarm(data.alarms?.water_level_alarm);
+
+        // 危險警告區塊
+        updateDangerAlarms(data.alarms);
+
+        // 更新空氣品質圖表
+        updateAirChart(data.low_frequency || []);
+        // 更新光照圖表
+        updateLightChart(data.high_frequency || []);
+        // 更新距離圖表
+        updateDistChart(data.high_frequency || []);
+      } catch (err) {
+        console.error('資料讀取失敗:', err);
+      }
+    }
+
+    function updateAirChart(data) {
+        // 🟡 先依 timestamp 升序排列
+        const sorted = data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const labels = sorted.map(d => d.timestamp?.slice(5, 16));
+        const temps = sorted.map(d => d.temperature);
+        const hums = sorted.map(d => d.humidity);
+        // 將 co_raw 轉為百分比
+        const cos = sorted.map(d => d.co_raw !== undefined ? (d.co_raw / 4095 * 100).toFixed(1) : null);
+        if (!air_chart) {
+            const ctx = document.getElementById('air_chart').getContext('2d');
+            air_chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                {
+                    label: '溫度 (°C)',
+                    data: temps,
+                    borderColor: 'red',
+                    backgroundColor: 'rgba(255,0,0,0.08)',
+                    yAxisID: 'y-temp',
+                    tension: 0.3
+                },
+                {
+                    label: '濕度 (%)',
+                    data: hums,
+                    borderColor: 'blue',
+                    backgroundColor: 'rgba(0,0,255,0.08)',
+                    yAxisID: 'y-hum',
+                    tension: 0.3
+                },
+                {
+                    label: 'CO (%)',
+                    data: cos,
+                    borderColor: 'green',
+                    backgroundColor: 'rgba(0,128,0,0.08)',
+                    yAxisID: 'y-hum', // 與濕度共用右側y軸
+                    tension: 0.3
+                }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                legend: { position: 'bottom' }
+                },
+                scales: {
+                'y-temp': {
+                    type: 'linear',
+                    position: 'left',
+                    title: { display: true, text: '溫度 (°C)' },
+                    min: 0
+                },
+                'y-hum': {
+                    type: 'linear',
+                    position: 'right',
+                    title: { display: true, text: '濕度/CO (%)' },
+                    min: 0,
+                    max: 100,
+                    grid: { drawOnChartArea: false }
+                }
+                }
+            }
+            });
+        } else {
+            air_chart.data.labels = labels;
+            air_chart.data.datasets[0].data = temps;
+            air_chart.data.datasets[1].data = hums;
+            air_chart.data.datasets[2].data = cos;
+            air_chart.update();
+        }
+    }
+
+    function updateLightChart(data) {
+        // 依 timestamp 升序排列
+        const sorted = data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const labels = sorted.map(d => d.timestamp?.slice(5, 16));
+        const lights = sorted.map(d => d.is_light_on);
+        if (!light_chart) {
+            const ctx = document.getElementById('light_chart').getContext('2d');
+            light_chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: '光照強度',
+                            data: lights,
+                            borderColor: 'orange',
+                            backgroundColor: 'rgba(255,165,0,0.08)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: '光照強度' },
+                            min: 0
+                        }
+                    }
+                }});
+        } else {
+            light_chart.data.labels = labels;
+            light_chart.data.datasets[0].data = lights;
+            light_chart.update();
+        }
+    }
+
+    function updateDistChart(data) {
+        // 依 timestamp 升序排列
+        const sorted = data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const labels = sorted.map(d => d.timestamp?.slice(5, 16));
+        const dists = sorted.map(d => d.distance);
+        if (!dist_chart) {
+            const ctx = document.getElementById('dist_chart').getContext('2d');
+            dist_chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '距離 (cm)',
+                            data: dists,
+                            borderColor: 'purple',
+                            backgroundColor: 'rgba(128,0,128,0.08)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: '距離 (cm)' },
+                            min: 0
+                        }
+                    }
+                }
+            });
+        } else {
+            dist_chart.data.labels = labels;
+            dist_chart.data.datasets[0].data = dists;
+            dist_chart.update();
+        }
+    }
+
+    function updateWaterLevelAlarm(alarm) {
+      const alarmEl = document.getElementById('waterLevelAlarm');
+      const textEl = document.getElementById('waterLevelText');
+      const dropPath = document.getElementById('waterDropPath');
+      if (alarmEl && textEl && dropPath) {
+        if (alarm) {
+          alarmEl.style.background = '#ff5252';
+          dropPath.setAttribute('fill', '#fff');
+          textEl.textContent = '水位滿';
+          textEl.style.color = '#fff';
+        } else {
+          alarmEl.style.background = '#e3f2fd'; // 淺藍
+          dropPath.setAttribute('fill', '#1565c0'); // 深藍
+          textEl.textContent = '水位正常';
+          textEl.style.color = '#222'; // 黑字
+        }
+      }
+    }
+
+    function updateDangerAlarms(alarms) {
+      const alarmMap = [
+        { key: 'temperature_alarm', el: document.getElementById('alarm-temperature'), label: '[溫度]超出警戒值' },
+        { key: 'humidity_alarm', el: document.getElementById('alarm-humidity'), label: '[濕度]超出警戒值' },
+        { key: 'co_alarm', el: document.getElementById('alarm-co'), label: '[CO]超出警戒值' },
+        { key: 'distance_alarm', el: document.getElementById('alarm-distance'), label: '檢測到有人跌倒' },
+      ];
+      let anyAlarm = false;
+      alarmMap.forEach(item => {
+        if (alarms && alarms[item.key]) {
+          item.el.style.background = '#ff5252';
+          item.el.style.color = '#fff';
+          anyAlarm = true;
+        } else {
+          item.el.style.background = '#f5f5f5'; // 淺灰
+          item.el.style.color = '#222'; // 黑字
+        }
+      });
+      const center = document.getElementById('danger-center-alarm');
+      const text = document.getElementById('dangerAlarmText');
+      if (center && text) {
+        if (anyAlarm) {
+          center.style.background = '#ff5252';
+          text.textContent = '危險!';
+          text.style.color = '#fff';
+        } else {
+          center.style.background = '#E0E0E0';
+          text.textContent = '安全';
+          text.style.color = '#222'; // 黑字
+        }
+      }
+    }
+
+    // 初始化
+    fetchSensorData();
+    setInterval(fetchSensorData, 5000);
+  </script>
+</body>
+</html>
