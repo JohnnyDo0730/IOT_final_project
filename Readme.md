@@ -1,6 +1,6 @@
-# Database Final Project
+# IOT Final Project
 
-這是我們的資料庫期末專案，包含初始化環境步驟、Git 使用流程與命名規則等說明。
+這是我們的物聯網期末專案，包含初始化環境步驟、Git 使用流程與命名規則等說明。
 
 ## 📋 專案架構
 
@@ -27,8 +27,8 @@ project/
 │       └── db.py               # 資料庫連接工具
 │
 ├── esp32/                      # ESP32 韌體程式碼
-│   └── ultrasonic/             # 超音波模組程式碼 (包含所有最終功能)
-│       └── ultrasonic.ino      # 超音波感測器主程式檔案
+│   └── final/                  # 最終使用之版本
+│       └── final.ino           # ESP32主程式檔案
 │
 ├── run.py                      # 應用程式入口點
 ├── Pipfile                     # 依賴管理
