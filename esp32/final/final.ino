@@ -92,26 +92,19 @@ int readCOppm() {
 }
 
 // 風扇Duty
-int calcFanDuty(int temp, int hum, int coRaw) {
-  if (coRaw > 3000) return 255;
+int calcFanDuty(int temperature, int humidity, int co_raw) {
+    // 替換以下係數與截距為你實際訓練得到的值
+    float fan_speed = 1.92135466 * temperature + 0.67442817 * humidity + 0.01006322 * co_raw -23.082783873332133;
 
-  int dutyT = 0, dutyH = 0;
-  int temp_low = 32, temp_high = 36;
-  if (temp > temp_low) {
-    if (temp >= temp_high) dutyT = 255;
-    else dutyT = (int)(255.0 * (temp - temp_low) / (temp_high - temp_low));
-  }
+    // 限制風扇速度在 0~100% 範圍
+    if (fan_speed < 0.0) fan_speed = 0.0;
+    if (fan_speed > 100.0) fan_speed = 100.0;
 
-  int hum_low = 20, hum_high = 50;
-  if (hum > hum_low) {
-    if (hum >= hum_high) dutyH = 255;
-    else dutyH = (int)(255.0 * (hum - hum_low) / (hum_high - hum_low));
-  }
-
-  int duty = max(dutyT, dutyH);
-  duty = constrain(duty, 0, 255);
-  return duty;
+    // 將 0~100% 轉換為 0~255 的 PWM 值
+    int pwm_value = (int)(fan_speed / 100.0 * 255.0);
+    return pwm_value;
 }
+
 
 // 蜂鳴器狀態
 bool getBuzzerState(int t, int h, int coRaw, int waterState) {
