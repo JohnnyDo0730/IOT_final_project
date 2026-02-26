@@ -4,6 +4,9 @@
 
 ## 📋 專案架構
 
+![螢幕擷取畫面 2026-02-26 115606](https://github.com/user-attachments/assets/5033ff26-d68f-4dd7-b552-afeb2c959e69)
+![螢幕擷取畫面 2025-06-08 175159](https://github.com/user-attachments/assets/45ecf2e7-a048-42bb-8f88-c7a800ae0aa5)
+
 ```
 project/
 │
